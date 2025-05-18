@@ -1,0 +1,58 @@
+<?php
+include("dbconnection.php");
+
+if ($_SERVER["REQUEST_METHOD"] == "POST") {
+    $email = $_POST["email"];
+    $password = $_POST["password"];
+
+    if (empty($email)) {
+        echo "<script>alert('Email is required'); window.location.href='index.php'</script>";
+        exit();
+    }
+    if (empty($password)) {
+        echo "<script>alert('Password is required'); window.location.href='index.php'</script>";
+        exit();
+    }
+
+    if (isset($_POST['login'])) {
+        // LOGIN PROCESS
+        $query = "SELECT * FROM users WHERE email = :email AND password = :password";
+        $stmt = $conn->prepare($query);
+        $stmt->execute([
+            ":email" => $email,
+            ":password" => $password
+        ]);
+        $userData = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if ($stmt->rowCount() == 1) {
+            session_start();
+            $_SESSION['email'] = $userData['email'];
+            echo "<script>alert('Login Successful'); window.location.href='home.php'</script>";
+        } else {
+            echo "<script>alert('No Account Found!'); window.location.href='index.php'</script>";
+        }
+
+    } elseif (isset($_POST['register'])) {
+        // REGISTER PROCESS
+        $checkQuery = "SELECT * FROM users WHERE email = :email";
+        $checkStmt = $conn->prepare($checkQuery);
+        $checkStmt->execute([":email" => $email]);
+
+        if ($checkStmt->rowCount() > 0) {
+            echo "<script>alert('Email already registered'); window.location.href='index.php'</script>";
+            exit();
+        }
+
+        $insertQuery = "INSERT INTO users (email, password) VALUES (:email, :password)";
+        $insertStmt = $conn->prepare($insertQuery);
+        $insertStmt->execute([
+            ":email" => $email,
+            ":password" => $password
+        ]);
+
+        echo "<script>alert('Registration Successful. Please login.'); window.location.href='index.php'</script>";
+    } else {
+        echo "<script>alert('Invalid form submission'); window.location.href='index.php'</script>";
+    }
+}
+?>
